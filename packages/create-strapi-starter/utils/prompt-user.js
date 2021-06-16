@@ -5,14 +5,12 @@ const axios = require('axios');
 const yaml = require('js-yaml');
 
 /**
- * @param {Object} projectArgs - The arguments needed to create a project
- * @param {string|null} projectArgs.projectName - The name/path of project
- * @param {string|null} projectArgs.starterUrl - The GitHub repo of the starter
- * @param {boolean} projectArgs.useQuickstart - Check quickstart flag was set
- * @returns
+ * @param {string|null} projectName - The name/path of project
+ * @param {string|null} starterUrl - The GitHub repo of the starter
+ * @returns Object containting prompt answers
  */
-module.exports = async function promptUser(projectArgs) {
-  const questions = await getPromptQuestions(projectArgs);
+module.exports = async function promptUser(projectName, starter) {
+  const questions = await getPromptQuestions(projectName, starter);
   return inquirer.prompt(questions);
 };
 
@@ -31,7 +29,7 @@ async function getStarterQuestion() {
     };
   }
 
-  const options = content.map(option => {
+  const choices = content.map(option => {
     const name = option.title.replace('Starter', '');
 
     return {
@@ -44,33 +42,19 @@ async function getStarterQuestion() {
     type: 'list',
     message:
       'Which starter would you like to use? (Starters are fullstack Strapi applications designed for a specific use case)',
-    pageSize: options.length,
-    choices: options,
+    pageSize: choices.length,
+    choices,
   };
 }
 
 /**
  *
- * @param {Object} projectArgs - The arguments needed to create a project
  * @returns Array of prompt question objects
  */
-async function getPromptQuestions(projectArgs) {
-  const { projectName, starterUrl, useQuickstart } = projectArgs;
+async function getPromptQuestions(projectName, starter) {
   const starterQuestion = await getStarterQuestion();
 
   return [
-    {
-      type: 'input',
-      default: projectName || 'my-strapi-project',
-      name: 'directory',
-      message: 'What would you like to name your project?',
-      when: !projectName,
-    },
-    {
-      name: 'starter',
-      when: !starterUrl,
-      ...starterQuestion,
-    },
     {
       type: 'list',
       name: 'quick',
@@ -85,11 +69,26 @@ async function getPromptQuestions(projectArgs) {
           value: false,
         },
       ],
-      when: !useQuickstart,
+    },
+    {
+      type: 'input',
+      default: 'my-strapi-project',
+      name: 'directory',
+      message: 'What would you like to name your project?',
+      when: !projectName,
+    },
+    {
+      name: 'starter',
+      when: !starter,
+      ...starterQuestion,
     },
   ];
 }
 
+/**
+ *
+ * @returns JSON starter data
+ */
 async function getStarterData() {
   try {
     const {

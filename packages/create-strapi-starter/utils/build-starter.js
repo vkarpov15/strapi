@@ -15,7 +15,6 @@ const { runInstall, runApp, initGit } = require('./child-process');
 const { getRepoInfo, downloadGitHubRepo } = require('./fetch-github');
 const logger = require('./logger');
 const stopProcess = require('./stop-process');
-const promptUser = require('./prompt-user');
 
 /**
  * @param  {string} - filePath Path to starter.json file
@@ -95,17 +94,6 @@ async function installWithLogs(path) {
 module.exports = async function buildStarter(programArgs, program) {
   let { projectName, starterUrl } = programArgs;
 
-  const useQuickstart = program.quickstart !== undefined;
-
-  // Prompt user when an argument is missing
-  const options = {};
-  const prompt = await promptUser({ projectName, starterUrl, useQuickstart });
-
-  // Use prompt values over programArg values
-  projectName = prompt.directory || projectName;
-  starterUrl = prompt.starter || starterUrl;
-  options.quickstart = prompt.quick || program.quickstart;
-
   // Fetch repo info
   const repoInfo = await getRepoInfo(starterUrl);
   const { fullName } = repoInfo;
@@ -152,7 +140,6 @@ module.exports = async function buildStarter(programArgs, program) {
     starter: fullUrl,
     template: starterJson.template,
     run: false,
-    ...options,
   };
 
   // Create strapi app using the template

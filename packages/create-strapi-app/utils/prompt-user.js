@@ -5,18 +5,19 @@ const axios = require('axios');
 const yaml = require('js-yaml');
 
 /**
- * @param {Object} projectArgs - The arguments needed to create a project
- * @param {string|null} projectArgs.projectName - The name/path of project
- * @param {string|null} projectArgs.template - The Github repo of the template
- * @param {boolean} projectArgs.useQuickstart - Check quickstart flag was set
- * @param {string} cliType - The type of cli: starters or templates
- * @returns
+ * @param {string|null} projectName - The name/path of project
+ * @param {string|null} template - The Github repo of the template
+ * @returns Object containting prompt answers
  */
-module.exports = async function promptUser(projectArgs) {
-  const questions = await getPromptQuestions(projectArgs);
+module.exports = async function promptUser(projectName, template) {
+  const questions = await getPromptQuestions(projectName, template);
   return inquirer.prompt(questions);
 };
 
+/**
+ *
+ * @returns Prompt question object
+ */
 async function getTemplateQuestion() {
   const content = await getTemplateData(`templates/templates.yml`);
 
@@ -24,11 +25,11 @@ async function getTemplateQuestion() {
   if (!content) {
     return {
       type: 'input',
-      message: 'Please provide the GitHub URL for your starter:',
+      message: 'Please provide the GitHub URL for your template:',
     };
   }
 
-  const options = content.map(option => {
+  const choices = content.map(option => {
     const name = option.title.replace('Template', '');
     return {
       name,
@@ -36,34 +37,22 @@ async function getTemplateQuestion() {
     };
   });
 
-  const separator = new inquirer.Separator();
-  const choices = [{ name: 'None', value: null }, separator, ...options];
-
   return {
     type: 'list',
-    message: `Would you like to use a template? (Templates are Strapi configurations designed for a specifc use case)`,
+    message: `Select a template`,
     pageSize: choices.length,
     choices,
   };
 }
 
-async function getPromptQuestions(projectArgs) {
-  const { projectName, template, useQuickstart } = projectArgs;
+/**
+ *
+ * @returns Array of prompt question objects
+ */
+async function getPromptQuestions(projectName, template) {
   const templateQuestion = await getTemplateQuestion();
 
   return [
-    {
-      type: 'input',
-      default: 'my-strapi-project',
-      name: 'directory',
-      message: 'What would you like to name your project?',
-      when: !projectName,
-    },
-    {
-      name: 'template',
-      when: !template,
-      ...templateQuestion,
-    },
     {
       type: 'list',
       name: 'quick',
@@ -78,11 +67,35 @@ async function getPromptQuestions(projectArgs) {
           value: false,
         },
       ],
-      when: !useQuickstart,
+    },
+    {
+      type: 'input',
+      default: 'my-strapi-project',
+      name: 'directory',
+      when: !projectName,
+      message: 'What would you like to name your project?',
+    },
+    {
+      type: 'confirm',
+      name: 'useTemplate',
+      when: !template,
+      message:
+        'Would you like to use a template? (Templates are Strapi configurations designed for a specifc use case)',
+    },
+    {
+      name: 'template',
+      when(answers) {
+        return answers.useTemplate;
+      },
+      ...templateQuestion,
     },
   ];
 }
 
+/**
+ *
+ * @returns JSON template data
+ */
 async function getTemplateData() {
   try {
     const {
