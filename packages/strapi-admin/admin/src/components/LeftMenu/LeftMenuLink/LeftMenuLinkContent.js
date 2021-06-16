@@ -10,6 +10,7 @@ import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
 import styled from 'styled-components';
 import { Link, withRouter } from 'react-router-dom';
+import { useGlobalContext } from 'strapi-helper-plugin';
 import en from '../../../translations/en.json';
 import LeftMenuIcon from './LeftMenuIcon';
 import A from './A';
@@ -31,6 +32,8 @@ const LeftMenuLinkContent = ({
   notificationsCount,
   search,
 }) => {
+  const { emitEvent } = useGlobalContext();
+
   const isLinkActive = startsWith(
     location.pathname.replace('/admin', '').concat('/'),
     destination.concat('/')
@@ -53,6 +56,12 @@ const LeftMenuLinkContent = ({
       <LinkLabel>{labelId}</LinkLabel>
     );
 
+  const handleClick = () => {
+    if (destination === '/marketplace') {
+      emitEvent('didGoToMarketplace');
+    }
+  };
+
   // Create external or internal link.
   return destination.includes('http') ? (
     <A
@@ -72,6 +81,7 @@ const LeftMenuLinkContent = ({
         pathname: destination,
         search,
       }}
+      onClick={handleClick}
     >
       <LeftMenuIcon icon={iconName} />
       {content}
